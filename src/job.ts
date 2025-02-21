@@ -1,4 +1,3 @@
-import { spawn } from 'child_process';
 import { CronError, ExclusiveParametersError } from './errors';
 import { CronTime } from './time';
 import {
@@ -30,6 +29,12 @@ export class CronJob<OC extends CronOnCompleteCommand | null = null, C = null> {
 
 	get isCallbackRunning() {
 		return this._isCallbackRunning;
+	}
+
+	get isBrowser() {
+		return (
+			typeof window !== 'undefined' && typeof window.document !== 'undefined'
+		);
 	}
 
 	constructor(
@@ -175,12 +180,20 @@ export class CronJob<OC extends CronOnCompleteCommand | null = null, C = null> {
 			}
 
 			case 'string': {
+				if (this.isBrowser)
+					throw new Error('System commands are not supported in the browser.');
+
+				const { spawn } = require('child_process');
 				const [command, ...args] = cmd.split(' ');
 
 				return spawn.bind(undefined, command ?? cmd, args, {}) as () => void;
 			}
 
 			case 'object': {
+				if (this.isBrowser)
+					throw new Error('System commands are not supported in the browser.');
+
+				const { spawn } = require('child_process');
 				return spawn.bind(
 					undefined,
 					cmd.command,
